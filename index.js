@@ -27,8 +27,25 @@ const alphabet = [
   "y",
   "z",
 ];
+const entities = [
+  {
+    char: "ä",
+    entity: "&auml;",
+  },
+  {
+    char: "ö",
+    entity: "&ouml;",
+  },
+  {
+    char: "ü",
+    entity: "&uuml;",
+  },
+];
+// Um wieviel verschieben, kann positiv bzw. negativ sein, z.B. 1 bzw. -1
 let counter;
+// Zeichenkette zum Verschlüsseln, kann String mit oder ohne Leerzeichen sein, z.B. hallo bzw. 'ich sage hallo'
 let wordToEncrypt = argv[0];
+// Das zweite Argument überprüfen, kann nur ein Integer (positiv bzw. negativ) sein, sonst wird Fehler geworfen
 if (
   argv[1] &&
   (Math.sign(parseInt(argv[1])) === 1 || Math.sign(parseInt(argv[1])) === -1)
@@ -38,35 +55,93 @@ if (
   console.log("The second argument must be an integer.");
   process.exit("1");
 }
-let wordLength = wordToEncrypt.length;
+let charFound;
 let wordToEncryptArray = [];
-for (let i = 0; i < wordLength; i++) {
-  wordToEncryptArray.push(wordToEncrypt[i]);
+let spetialCharFound = false;
+// Aus Zeichenkette ein Array generieren
+for (let i = 0; i < wordToEncrypt.length; i++) {
+  if (wordToEncrypt[i] === "&") {
+    // Wenn Anfang vom Entity für Umlaute gefunden
+    charFound = "";
+    spetialCharFound = true;
+  } else if (wordToEncrypt[i] === ";") {
+    // Wenn Ende vom Entity für Umlaute gefunden
+    spetialCharFound = false;
+  }
+  if (spetialCharFound) {
+    // Entity zusammen setzen
+    charFound += wordToEncrypt[i];
+    continue;
+  } else {
+    // Zeichen für Array vorbereiten
+    if (wordToEncrypt[i] !== ";") {
+      // Normales Zeichen
+      charFound = wordToEncrypt[i];
+    } else {
+      // Ende vom Entity
+      charFound += wordToEncrypt[i];
+    }
+  }
+  // Zeichen im Array speichern
+  wordToEncryptArray.push(charFound);
 }
+// Hilfefunktion, die die Position eines Zeichen im Array überpürft, z.B. für 'a' kommt 0
 function getPositionInAlphabet(letter) {
   return alphabet.indexOf(letter);
 }
+// Neues Zeichen für die Verschlüsselung wird ermittelt
+// char - altes Zeichen
+// counter Anzahl für Verschiebung, kann positiv bzw. negativ sein
 function getNeuChar(char, counter) {
   let charToReturn;
+  // Wenn das Zeichen im Alphabet [a-z] ist, wird das neue Zeichen ermittelt
   if (alphabet.includes(char)) {
-    let positionNew;
-    let position = getPositionInAlphabet(char);
+    let newPositon;
+    let currentPosition = getPositionInAlphabet(char);
+    // Bei der positiven Verschiebung wird nach rechts verschoben
     if (counter > 0) {
-      if (position + counter > 25) {
-        positionNew = counter - 1 - (25 - position);
+      // 'z' hat Potiontion 25
+      // wenn counter = 1
+      // newPositon von 'z' sollte 'a' ergeben:
+      // 1 - 1 (25 - 25) = 0
+      if (currentPosition + counter > 25) {
+        newPositon = counter - 1 - (25 - currentPosition);
       } else {
-        positionNew = position + counter;
+        // Sonst nach rechts um counter-Anzahl verschieben
+        newPositon = currentPosition + counter;
       }
+      // Bei der negativen Verschiebung wird nach links verschoben
     } else {
-      if (position + counter < 25) {
-        positionNew = position + counter;
+      // 'z' hat Potiontion 25
+      // wenn counter = -1
+      // newPositon von 'z' sollte 'y' ergeben:
+      // 25 + (-1) = 24
+      // Ergebnis sollte nicht negativ sein, da Alphaber-Array mit 0-Index anfängt
+      if (currentPosition + counter >= 0 && currentPosition + counter < 25) {
+        newPositon = currentPosition + counter;
       } else {
-        positionNew = 25 + (position + counter) + 1;
+        // Sonst nach links um counter-Anzahl verschieben
+        newPositon = 25 + (currentPosition + counter) + 1;
       }
     }
-    charToReturn = alphabet[positionNew];
+    charToReturn = alphabet[newPositon];
   } else {
-    charToReturn = char;
+    //Ansonsten wird es überprüft, ob das Zeichen ein Umlaut [ä,ö,ü] bzw. ein Entity [&auml;,&ouml;,&uuml;] ist
+    const entityFound1 = entities.find((entity) => entity.char === char);
+    const entityFound2 = entities.find((entity) => entity.entity === char);
+    // Wenn das Zeichen ein Umlaut [ä,ö,ü] bzw. ein Entity [&auml;,&ouml;,&uuml;] is
+    if (entityFound1 || entityFound2) {
+      if (counter < 0) {
+        // Wenn die Verschlüsselung positiv ist, Umlaut wird zum Entity
+        charToReturn = entityFound2.char;
+      } else {
+        // Wenn die Verschlüsselung negativ ist, Entity wird zum Umlaut
+        charToReturn = entityFound1.entity;
+      }
+    } else {
+      // Andere Zeichen wie Zahlen bzw. andere Sonderzeichen werden nicht verschlüsselt
+      charToReturn = char;
+    }
   }
   return charToReturn;
 }
