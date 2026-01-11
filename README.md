@@ -1,4 +1,4 @@
-# Caesar Cipher
+# Demo Project: Caesar Cipher
 
 **Description:** Implement a basic Caesar Cipher encryption.
 
@@ -18,3 +18,7 @@
 **Example 2:** node index.js "khoor zruog" -3
 
 - Output: hello world
+
+**Notes:**
+
+This project was created for learning and demonstration purposes.
